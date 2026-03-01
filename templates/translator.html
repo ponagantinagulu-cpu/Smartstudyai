@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Translator - SmartStudyAI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="logo">
+        <h1>✨ SmartStudyAI</h1>
+    </div>
+
+    <ul class="nav-links">
+        <li><a href="/" class="nav-link">Home</a></li>
+        <li><a href="/translator" class="nav-link">Translator</a></li>
+        <li><a href="/youtube-notes" class="nav-link">YouTube Notes</a></li>
+        <li class="nav-dropdown">
+            <a href="#" class="nav-link dropbtn">Converters ▾</a>
+            <div class="dropdown-content">
+                <a href="/pdf-to-word">PDF → Word</a>
+                <a href="/word-to-pdf">Word → PDF</a>
+                <a href="/ppt-to-pdf">PPT → PDF</a>
+            </div>
+        </li>
+        <li><a href="/resume-builder" class="nav-link">Resume Builder</a></li>
+        <li><a href="/team" class="nav-link">Team</a></li>
+        {% if session.get('user_id') %}
+            <li><a href="/dashboard" class="nav-link">Dashboard</a></li>
+        {% endif %}
+    </ul>
+
+    <div class="auth-section">
+        <button id="themeToggle" class="theme-btn">🌙</button>
+        {% if session.get('user_id') %}
+            <div class="profile-dropdown">
+                <span class="username">👤 {{ session.get('username') }}</span>
+                <div class="dropdown-content">
+                    <a href="/profile">Profile</a>
+                    <a href="/logout">Logout</a>
+                </div>
+            </div>
+        {% else %}
+            <span class="guest-badge">Guest</span>
+            <a href="/login" class="auth-btn">Login</a>
+        {% endif %}
+    </div>
+</nav>
+
+<div class="form-section">
+    <h2>🌍 Language Translator</h2>
+    
+    <div class="translator-container">
+        {% if error_message %}
+            <div class="error-box">
+                ⚠️ {{ error_message }}
+            </div>
+        {% endif %}
+        
+        <form method="POST">
+            <textarea name="text" id="textInput" placeholder="Enter text to translate..." required>{{ request.form.text }}</textarea>
+            
+            <div class="form-row">
+                <select name="language" required>
+                    <option value="">Select Language</option>
+                    <option value="hi">🇮🇳 Hindi</option>
+                    <option value="ta">🇮🇳 Tamil</option>
+                    <option value="te">🇮🇳 Telugu</option>
+                    <option value="fr">🇫🇷 French</option>
+                    <option value="es">🇪🇸 Spanish</option>
+                    <option value="de">🇩🇪 German</option>
+                    <option value="it">🇮🇹 Italian</option>
+                    <option value="pt">🇵🇹 Portuguese</option>
+                    <option value="ja">🇯🇵 Japanese</option>
+                    <option value="zh">🇨🇳 Chinese</option>
+                </select>
+                
+                <button type="submit">Translate ✨</button>
+            </div>
+        </form>
+
+        <div class="output {% if not translated_text %}hidden{% endif %}" id="outputContainer" style="opacity: 1; visibility: visible;">
+            <h3>📝 Translated Text:</h3>
+            <p id="translatedText">{{ translated_text }}</p>
+
+            <div class="output-actions">
+                <button class="copy-btn" onclick="copyToClipboard()">📋 Copy</button>
+                <h4 id="audioHeading" style="display: none;">🔊 Voice Output:</h4>
+                <button id="speakBtn" class="speak-btn" onclick="playAudio()" style="display: none;">🔊 Play Audio</button>
+            </div>
+
+            <!-- simple AI panel for translator -->
+            <div class="ai-tools" style="margin-top: 20px;">
+                <h4>🤖 AI Tools</h4>
+                <button class="ai-btn" id="transQuizBtn">Generate Quiz from Text</button>
+                <div id="translatorAIOutput" style="margin-top:10px; white-space:pre-wrap; color:#b4c5e4;"></div>
+            </div>
+
+            <audio id="audioPlayer">
+                {% if audio_file %}
+                    <source src="{{ url_for('static', filename=audio_file) }}" type="audio/mpeg">
+                {% endif %}
+            </audio>
+        </div>
+    </div>
+</div>
+
+{% if audio_file %}
+<script>
+    // show audio controls after full page render
+    document.addEventListener('DOMContentLoaded', function() {
+        const audioHeading = document.getElementById('audioHeading');
+        const speakBtnElement = document.getElementById('speakBtn');
+        if(audioHeading) audioHeading.style.display = 'block';
+        if(speakBtnElement) speakBtnElement.style.display = 'inline-block';
+    });
+</script>
+{% endif %}
+
+<!-- translator AI utilities --->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const transQuizBtn = document.getElementById('transQuizBtn');
+        if (!transQuizBtn) return;
+        
+        transQuizBtn.addEventListener('click', async () => {
+            const outputDiv = document.getElementById('translatorAIOutput');
+            const translatedText = document.getElementById('translatedText').textContent;
+            outputDiv.textContent = '⏳ Generating quiz...';
+            if (!translatedText) {
+                outputDiv.textContent = '❌ No translated text available';
+                return;
+            }
+            try {
+                const resp = await fetch('/ai/quiz', {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({notes: translatedText})
+                });
+                const data = await resp.json();
+                outputDiv.textContent = data.quiz || data.error;
+            } catch(err) {
+                outputDiv.textContent = '❌ Error contacting AI';
+            }
+        });
+    });
+</script>
+{% include 'utilities.html' %}
+<script src="{{ url_for('static', filename='utility_panel.js') }}"></script>
+
+<style>
+    .translator-container {
+        width: 90%;
+        max-width: 700px;
+        margin: 30px auto;
+        padding: 40px;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.04));
+        border-radius: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        animation: slideUp 0.6s ease-out 0.2s both;
+    }
+
+    .error-box {
+        background: rgba(255, 107, 107, 0.1);
+        border: 1px solid rgba(255, 107, 107, 0.3);
+        color: #ff9999;
+        padding: 15px 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        font-size: 14px;
+        animation: slideInAlert 0.5s ease-out;
+    }
+
+    @keyframes slideInAlert {
+        from {
+            opacity: 0;
+            transform: translateX(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    .form-row {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .form-row select {
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .form-row button {
+        padding: 14px 35px;
+        white-space: nowrap;
+    }
+
+    .output-actions {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .copy-btn,
+    .speak-btn {
+        padding: 10px 20px;
+        background: linear-gradient(135deg, #00f2ff, #00ff88);
+        border: none;
+        border-radius: 8px;
+        color: black;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .copy-btn:hover,
+    .speak-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(0, 242, 255, 0.4);
+    }
+
+    #translatedText {
+        background: rgba(0, 242, 255, 0.08);
+        padding: 20px;
+        border-radius: 12px;
+        border-left: 4px solid #00f2ff;
+        margin: 20px 0;
+        line-height: 1.8;
+        color: #ffffff;
+        opacity: 1;
+        visibility: visible;
+        font-size: 16px;
+        word-wrap: break-word;
+        white-space: normal;
+    }
+
+    @media (max-width: 768px) {
+        .translator-container {
+            width: 95%;
+            padding: 25px;
+        }
+
+        .form-row {
+            flex-direction: column;
+        }
+
+        .form-row select,
+        .form-row button {
+            width: 100%;
+        }
+
+        .output-actions {
+            flex-direction: column;
+        }
+
+        .copy-btn,
+        .speak-btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<script>
+function playAudio() {
+    var audio = document.getElementById("audioPlayer");
+    // Reset the audio player
+    audio.pause();
+    audio.currentTime = 0;
+    // Play from the beginning
+    audio.play().catch(error => {
+        console.error('Error playing audio:', error);
+        showNotification("Could not play audio. Please try again.", "error");
+    });
+}
+
+function copyToClipboard() {
+    const translatedText = document.getElementById("translatedText").textContent;
+    navigator.clipboard.writeText(translatedText).then(() => {
+        showNotification("Translated text copied to clipboard!", "success");
+    }).catch(err => {
+        console.error('Failed to copy:', err);
+        showNotification("Failed to copy text", "error");
+    });
+}
+
+function showNotification(message, type = 'success') {
+    const notification = document.createElement('div');
+    notification.textContent = message;
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 25px;
+        border-radius: 10px;
+        color: white;
+        z-index: 9999;
+        font-weight: 600;
+        ${type === 'success' ? 'background: linear-gradient(135deg, #00f2ff, #00ff88);' : 'background: linear-gradient(135deg, #ff6b6b, #ff9800);'}
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+    `;
+
+    document.body.appendChild(notification);
+
+    if(window.gsap) {
+        gsap.from(notification, {
+            duration: 0.4,
+            opacity: 0,
+            y: -20,
+            ease: 'power2.out'
+        });
+
+        gsap.to(notification, {
+            duration: 0.4,
+            opacity: 0,
+            y: -20,
+            ease: 'power2.in',
+            delay: 3
+        });
+    }
+
+    setTimeout(() => notification.remove(), 3400);
+}
+
+// Translate form handler - AJAX submission
+document.querySelector('.translator-container form')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const textInput = document.getElementById('textInput').value;
+    const languageSelect = document.querySelector('select[name="language"]').value;
+    const submitBtn = this.querySelector('button[type="submit"]');
+    
+    if(!textInput || !languageSelect) {
+        showNotification("Please fill in all fields", "error");
+        return;
+    }
+    
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = "Translating...";
+    submitBtn.disabled = true;
+    
+    try {
+        const formData = new FormData(this);
+        const response = await fetch('/translator', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if(data.success) {
+            // Update translated text
+            document.getElementById('translatedText').textContent = data.translated_text;
+            
+            // Update audio player if audio file exists
+            if(data.audio_file) {
+                const audioPlayer = document.getElementById('audioPlayer');
+                let audioSource = audioPlayer.querySelector('source');
+                
+                if(!audioSource) {
+                    audioSource = document.createElement('source');
+                    audioSource.type = 'audio/mpeg';
+                    audioPlayer.appendChild(audioSource);
+                }
+                
+                const audioUrl = `/static/${data.audio_file}?t=${Date.now()}`;
+                audioSource.src = audioUrl;
+                
+                // Reset and reload the audio player with the new source
+                audioPlayer.pause();
+                audioPlayer.currentTime = 0;
+                audioPlayer.load();
+                
+                // Show audio heading/button
+                const audioHeading = document.getElementById('audioHeading');
+                const speakBtnElement = document.getElementById('speakBtn');
+                if(audioHeading) audioHeading.style.display = 'block';
+                if(speakBtnElement) speakBtnElement.style.display = 'inline-block';
+            }
+            
+            // Show output container by removing hidden class
+            document.getElementById('outputContainer').classList.remove('hidden');
+            // ensure textarea loses focus so its border doesn’t overlay
+            const txt = document.getElementById('textInput');
+            if(txt) txt.blur();
+            
+            // Scroll to output
+            setTimeout(() => {
+                document.getElementById('outputContainer').scrollIntoView({ behavior: 'smooth' });
+            }, 300);
+            
+            showNotification("Translation completed! 🎉", "success");
+        } else {
+            showNotification(data.error || "Translation failed. Please try again.", "error");
+        }
+    } catch(error) {
+        console.error('Translation error:', error);
+        showNotification("Error during translation: " + error.message, "error");
+    } finally {
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
+    }
+});
+
+document.getElementById("textInput").addEventListener("keydown", function(e) {
+    if (e.key === "Enter" && e.ctrlKey) {
+        this.form.submit();
+    }
+});
+
+// Animate the speak button
+const speakBtnAnim = document.getElementById('speakBtn');
+if(speakBtnAnim) {
+    speakBtnAnim.addEventListener('click', function() {
+        if(window.gsap) {
+            gsap.to(this, {
+                duration: 0.3,
+                scale: 0.95,
+                yoyo: true,
+                repeat: 1
+            });
+        }
+    });
+}
+
+// Animate copy button
+const copyBtnAnim = document.querySelector('.copy-btn');
+if(copyBtnAnim) {
+    copyBtnAnim.addEventListener('click', function() {
+        if(window.gsap) {
+            gsap.to(this, {
+                duration: 0.3,
+                scale: 0.95,
+                yoyo: true,
+                repeat: 1
+            });
+        }
+    });
+}
+</script>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+
+</body>
+</html>

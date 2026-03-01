@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>YouTube Notes - SmartStudyAI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="logo">
+        <h1>✨ SmartStudyAI</h1>
+    </div>
+
+    <ul class="nav-links">
+        <li><a href="/" class="nav-link">Home</a></li>
+        <li><a href="/translator" class="nav-link">Translator</a></li>
+        <li><a href="/youtube-notes" class="nav-link">YouTube Notes</a></li>
+        <li class="nav-dropdown">
+            <a href="#" class="nav-link dropbtn">Converters ▾</a>
+            <div class="dropdown-content">
+                <a href="/pdf-to-word">PDF → Word</a>
+                <a href="/word-to-pdf">Word → PDF</a>
+                <a href="/ppt-to-pdf">PPT → PDF</a>
+            </div>
+        </li>
+        <li><a href="/resume-builder" class="nav-link">Resume Builder</a></li>
+        <li><a href="/team" class="nav-link">Team</a></li>
+        {% if session.get('user_id') %}
+            <li><a href="/dashboard" class="nav-link">Dashboard</a></li>
+        {% endif %}
+    </ul>
+
+    <div class="auth-section">
+        <button id="themeToggle" class="theme-btn">🌙</button>
+        {% if session.get('user_id') %}
+            <div class="profile-dropdown">
+                <span class="username">👤 {{ session.get('username') }}</span>
+                <div class="dropdown-content">
+                    <a href="/profile">Profile</a>
+                    <a href="/logout">Logout</a>
+                </div>
+            </div>
+        {% else %}
+            <span class="guest-badge">Guest</span>
+            <a href="/login" class="auth-btn">Login</a>
+        {% endif %}
+    </div>
+</nav>
+
+<div class="form-section">
+    <h2>📺 YouTube Notes Generator</h2>
+
+    <form method="POST" id="youtubeForm">
+        <input type="text" name="url" placeholder="Paste YouTube URL here..." required>
+
+        <div class="form-row" style="margin-top:16px;">
+            <label for="ai_mode" style="color:#b4c5e4; font-size:14px;">AI Summary Type:</label>
+            <select name="ai_mode" id="ai_mode" style="margin-left:8px; padding:4px 8px;">
+                <option value="short">Short Summary</option>
+                <option value="exam">Exam Revision Notes</option>
+                <option value="bullet">Bullet‑point Smart Notes</option>
+                <option value="simple">Simplified Explanation</option>
+            </select>
+        </div>
+
+        <div class="button-group" style="margin-top:12px;">
+            <button type="submit" name="mode" value="general" id="generalBtn">
+                📝 Generate Notes
+            </button>
+
+            <button type="submit" name="mode" value="ai" id="aiBtn">
+                🤖 AI Smart Notes
+            </button>
+        </div>
+        <div id="ytError" style="color:#ff6b6b; margin-top:10px; display:none;"></div>
+    </form>
+</div>
+
+<!-- HISTORY SECTION -->
+<div class="top-history">
+    <div class="history-box">
+        <h3>📚 Study History</h3>
+
+        {% if history %}
+            {% for video in history %}
+                <div class="history-item">
+                    <a href="/load-video/{{ video[0] }}">
+                        ▶ {{ video[0] }} 
+                    </a>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p style="text-align: center; color: #b4c5e4;">No previous videos. Start studying!</p>
+        {% endif %}
+    </div>
+</div>
+
+{% if notes and video_id %}
+<div class="container">
+    <!-- AI tools panel -->
+    {% if mode == 'ai' %}
+    <div class="ai-tools" style="margin:20px 0;">
+        <h3>🤖 AI Study Assistant</h3>
+        <div class="tool-buttons" style="display:flex; gap:12px; flex-wrap:wrap;">
+            <button class="ai-btn" data-action="quiz">Generate Quiz</button>
+            <button class="ai-btn" data-action="flashcards">Create Flashcards</button>
+            <button class="ai-btn" data-action="mindmap">Generate Mind‑map</button>
+            <button class="ai-btn" data-action="doubt">Ask a Doubt</button>
+            <button class="ai-btn" data-action="plan">Study Planner</button>
+        </div>
+        <div id="aiOutput" style="margin-top:16px; white-space:pre-wrap; color:#b4c5e4;"></div>
+    </div>
+    {% endif %}
+
+    <div class="video-section">
+        <iframe
+            id="youtubePlayer"
+            src="https://www.youtube.com/embed/{{ video_id }}?enablejsapi=1&origin=http://127.0.0.1:5000"
+            allowfullscreen
+            style="border: none;">
+        </iframe>
+    </div>
+
+    <div class="right-panel">
+
+        <div class="notes-section">
+
+            <input type="text"
+                   id="noteSearch"
+                   placeholder="🔍 Search in notes..."
+                   onkeyup="searchNotes()">
+
+            <h3>📝 Generated Notes:</h3>
+
+            <div id="notesContainer" class="notes-container">
+                {% for line in notes.split('\n') %}
+                    {% if line %}
+                        <p class="note-line"
+                           data-time="{{ line[1:6] }}"
+                           onclick="jumpTo('{{ line[1:6] }}')">
+                            {{ line }}
+                        </p>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- PDF BUTTON -->
+        <form action="/download_pdf" method="POST" class="pdf-box">
+            <input type="hidden" name="notes" value="{{ notes }}">
+            <button type="submit">⬇️ Download PDF</button>
+        </form>
+
+    </div> <!-- END right-panel -->
+</div> <!-- END container -->
+{% endif %}
+
+<script src="https://www.youtube.com/iframe_api"></script>
+
+<script>
+let player;
+let userScrolling = false;
+let lastActiveNote = null;
+
+function onYouTubeIframeAPIReady() {
+    player = new YT.Player('youtubePlayer', {
+        events: {
+            'onReady': function(event) {
+                console.log("Player Ready");
+                setInterval(highlightCurrentNote, 1000);
+                const notesContainer = document.getElementById("notesContainer");
+
+                if(notesContainer) {
+                    notesContainer.addEventListener("scroll", function() {
+                        userScrolling = true;
+
+                        clearTimeout(notesContainer.scrollTimeout);
+                        notesContainer.scrollTimeout = setTimeout(() => {
+                            userScrolling = false;
+                        }, 3000);
+                    });
+                }
+            }
+        }
+    });
+}
+
+function jumpTo(timestamp) {
+    if (!player) return;
+
+    let parts = timestamp.split(":");
+    let seconds = parseInt(parts[0]) * 60 + parseInt(parts[1]);
+
+    console.log("Jumping to:", seconds);
+
+    player.seekTo(seconds, true);
+    player.playVideo();
+}
+
+function highlightCurrentNote() {
+    if (!player || typeof player.getCurrentTime !== "function") return;
+    if (userScrolling) return;
+
+    let currentTime = player.getCurrentTime();
+    let notes = document.querySelectorAll(".note-line");
+
+    let activeNote = null;
+
+    for (let i = 0; i < notes.length; i++) {
+        let time = notes[i].dataset.time;
+        if (!time) continue;
+
+        let parts = time.split(":");
+        let seconds = parseInt(parts[0]) * 60 + parseInt(parts[1]);
+
+        let nextSeconds = Infinity;
+
+        if (i < notes.length - 1) {
+            let nextTime = notes[i + 1].dataset.time;
+            if (nextTime) {
+                let nextParts = nextTime.split(":");
+                nextSeconds = parseInt(nextParts[0]) * 60 + parseInt(nextParts[1]);
+            }
+        }
+
+        if (currentTime >= seconds && currentTime < nextSeconds) {
+            activeNote = notes[i];
+            break;
+        }
+    }
+
+    if (activeNote && lastActiveNote !== activeNote) {
+        if (lastActiveNote) {
+            lastActiveNote.classList.remove("active");
+        }
+
+        activeNote.classList.add("active");
+
+        activeNote.scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+        });
+
+        lastActiveNote = activeNote;
+    }
+}
+
+function searchNotes() {
+    const searchInput = document.getElementById("noteSearch").value.toLowerCase();
+    const notes = document.querySelectorAll(".note-line");
+
+    notes.forEach(note => {
+        const text = note.innerText.toLowerCase();
+        note.style.display = text.includes(searchInput) ? "block" : "none";
+    });
+}
+
+// AI tool interactions
+async function callAI(endpoint, payload) {
+    const resp = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+    return resp.json();
+}
+
+document.querySelectorAll('.ai-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+        const action = btn.getAttribute('data-action');
+        const notesText = `{{ notes|default('')|replace("\n", "\\n") }}`;
+        const outputDiv = document.getElementById('aiOutput');
+        outputDiv.textContent = '⏳ Generating...';
+
+        try {
+            let result;
+            if (action === 'quiz') {
+                result = await callAI('/ai/quiz', { notes: notesText });
+                outputDiv.textContent = result.quiz || result.error;
+            } else if (action === 'flashcards') {
+                result = await callAI('/ai/flashcards', { notes: notesText });
+                outputDiv.textContent = result.flashcards || result.error;
+            } else if (action === 'mindmap') {
+                result = await callAI('/ai/mindmap', { notes: notesText });
+                outputDiv.textContent = result.mindmap || result.error;
+            } else if (action === 'doubt') {
+                const question = prompt('Ask your question (based on generated notes):');
+                if (!question) return;
+                result = await callAI('/ai/doubt', { notes: notesText, question });
+                outputDiv.textContent = result.answer || result.error;
+            } else if (action === 'plan') {
+                const examDate = prompt('Enter your exam date (YYYY-MM-DD):');
+                const hours = prompt('Available study hours per day:');
+                if (!examDate || !hours) return;
+                result = await callAI('/ai/study-plan', { exam_date: examDate, hours_per_day: hours });
+                outputDiv.textContent = result.plan || result.error;
+            }
+        } catch (err) {
+            outputDiv.textContent = '❌ Error contacting AI service';
+        }
+    });
+});
+
+
+// handle form submission
+const youtubeForm = document.getElementById('youtubeForm');
+youtubeForm.addEventListener('submit', function(e) {
+    const generalBtn = document.getElementById('generalBtn');
+    const aiBtn = document.getElementById('aiBtn');
+    const errorDiv = document.getElementById('ytError');
+    errorDiv.style.display = 'none';
+    generalBtn.disabled = true;
+    aiBtn.disabled = true;
+    generalBtn.textContent = 'Processing...';
+    aiBtn.textContent = 'Processing...';
+});
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+{% include 'utilities.html' %}
+<script src="{{ url_for('static', filename='utility_panel.js') }}"></script>
+
+</body>
+</html>

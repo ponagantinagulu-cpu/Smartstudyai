@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Dashboard - SmartStudyAI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="logo">
+        <h1>✨ SmartStudyAI</h1>
+    </div>
+
+    <ul class="nav-links">
+        <li><a href="/" class="nav-link">Home</a></li>
+        <li><a href="/translator" class="nav-link">Translator</a></li>
+        <li><a href="/youtube-notes" class="nav-link">YouTube Notes</a></li>
+        <li class="nav-dropdown">
+            <a href="#" class="nav-link dropbtn">Converters ▾</a>
+            <div class="dropdown-content">
+                <a href="/pdf-to-word">PDF → Word</a>
+                <a href="/word-to-pdf">Word → PDF</a>
+                <a href="/ppt-to-pdf">PPT → PDF</a>
+            </div>
+        </li>
+        <li><a href="/resume-builder" class="nav-link">Resume Builder</a></li>
+        <li><a href="/team" class="nav-link">Team</a></li>
+    </ul>
+
+    <div class="auth-section">
+        <button id="themeToggle" class="theme-btn">🌙</button>
+        {% if session.get('user_id') %}
+            <div class="profile-dropdown">
+                <span class="username">👤 {{ session.get('username') }}</span>
+                <div class="dropdown-content">
+                    <a href="/dashboard">Dashboard</a>
+                    <a href="/logout">Logout</a>
+                </div>
+            </div>
+        {% else %}
+            <span class="guest-badge">Guest</span>
+            <a href="/login" class="auth-btn">Login</a>
+        {% endif %}
+    </div>
+</nav>
+
+<div class="form-section">
+    <h2>📊 Your Dashboard</h2>
+    <p>View your study history and progress logs below.</p>
+</div>
+
+<div class="container">
+    <div class="history-section" style="margin-bottom:40px;">
+        <h3>History</h3>
+        {% if history %}
+            <ul>
+            {% for item in history %}
+                <li><strong>{{ item[0] }}</strong> - {{ item[1] }} <br/> <small>{{ item[2] }}</small></li>
+            {% endfor %}
+            </ul>
+        {% else %}
+            <p>No history yet.</p>
+        {% endif %}
+    </div>
+
+    <div class="progress-section">
+        <h3>Activity Logs</h3>
+        {% if progress %}
+            <ul>
+            {% for log in progress %}
+                <li>{{ log[0] }} <em>({{ log[1] }})</em></li>
+            {% endfor %}
+            </ul>
+        {% else %}
+            <p>No activity logged.</p>
+        {% endif %}
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+{% include 'utilities.html' %}
+<script src="{{ url_for('static', filename='utility_panel.js') }}"></script>
+</body>
+</html>

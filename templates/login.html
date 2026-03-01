@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - SmartStudyAI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 50%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Animated background elements */
+        .bg-animation {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .floating-shape {
+            position: absolute;
+            opacity: 0.1;
+            border-radius: 50%;
+        }
+
+        .shape-1 {
+            width: 300px;
+            height: 300px;
+            background: #e94560;
+            top: -150px;
+            left: -150px;
+            animation: float1 8s infinite ease-in-out;
+        }
+
+        .shape-2 {
+            width: 250px;
+            height: 250px;
+            background: #a84fc4;
+            bottom: -125px;
+            right: -125px;
+            animation: float2 10s infinite ease-in-out;
+        }
+
+        @keyframes float1 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(30px, 30px) scale(1.1); }
+        }
+
+        @keyframes float2 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(-30px, -30px) scale(1.1); }
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 450px;
+            padding: 40px;
+            background: rgba(15, 52, 96, 0.7);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: containerSlideIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes containerSlideIn {
+            from {
+                opacity: 0;
+                transform: scale(0.8) translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .login-header h1 {
+            color: white;
+            font-size: 32px;
+            margin-bottom: 10px;
+            animation: titleFadeIn 0.8s ease-out 0.2s backwards;
+        }
+
+        .login-header p {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+            animation: subtitleFadeIn 0.8s ease-out 0.4s backwards;
+        }
+
+        @keyframes titleFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes subtitleFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .alert-box {
+            background: rgba(234, 69, 96, 0.2);
+            border: 1px solid #ea4560;
+            color: #ff6b7a;
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            animation: slideInAlert 0.5s ease-out;
+        }
+
+        @keyframes slideInAlert {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        .form-group:nth-of-type(1) {
+            animation: inputSlideIn 0.6s ease-out 0.3s backwards;
+        }
+
+        .form-group:nth-of-type(2) {
+            animation: inputSlideIn 0.6s ease-out 0.4s backwards;
+        }
+
+        @keyframes inputSlideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .form-group label {
+            display: block;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 13px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 14px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(168, 85, 247, 0.3);
+            border-radius: 12px;
+            color: white;
+            font-size: 15px;
+            outline: none;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .form-group input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .form-group input:hover {
+            border-color: rgba(168, 85, 247, 0.6);
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.2);
+        }
+
+        .form-group input:focus {
+            border-color: #a855f7;
+            background: rgba(168, 85, 247, 0.15);
+            box-shadow: 0 0 30px rgba(168, 85, 247, 0.4);
+        }
+
+        .input-underline {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 2px;
+            width: 0;
+            background: linear-gradient(90deg, #a855f7, #ec4899);
+            transition: width 0.3s ease;
+            border-radius: 2px;
+        }
+
+        .form-group input:focus ~ .input-underline {
+            width: 100%;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(168, 85, 247, 0.3);
+            overflow: hidden;
+            position: relative;
+            margin-bottom: 20px;
+            animation: buttonFadeIn 0.6s ease-out 0.5s backwards;
+        }
+
+        @keyframes buttonFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .login-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.2);
+            transition: left 0.3s ease;
+        }
+
+        .login-btn:hover::before {
+            left: 100%;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(168, 85, 247, 0.5);
+        }
+
+        .login-btn:active {
+            transform: translateY(-1px);
+        }
+
+        .login-btn.loading {
+            pointer-events: none;
+        }
+
+        .login-btn.loading::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            margin: auto;
+            border: 2px solid transparent;
+            border-radius: 50%;
+            border-top: 2px solid white;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .form-footer {
+            text-align: center;
+            animation: footerFadeIn 0.6s ease-out 0.6s backwards;
+        }
+
+        @keyframes footerFadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .form-footer p {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .form-footer a {
+            color: #a855f7;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .form-footer a::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #a855f7, #ec4899);
+            transition: width 0.3s ease;
+        }
+
+        .form-footer a:hover::after {
+            width: 100%;
+        }
+
+        .form-footer a:hover {
+            color: #ec4899;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 30px 20px;
+                max-width: 100%;
+            }
+
+            .login-header h1 {
+                font-size: 24px;
+            }
+
+            .shape-1, .shape-2 {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated background -->
+    <div class="bg-animation">
+        <div class="floating-shape shape-1"></div>
+        <div class="floating-shape shape-2"></div>
+    </div>
+
+    <!-- Login Container -->
+    <div class="login-container">
+        <div class="login-header">
+            <h1>Welcome Back</h1>
+            <p>Login to your SmartStudyAI account</p>
+        </div>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="alert-box">
+                    {{ messages[0] }}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <!-- Error Messages -->
+        {% if error %}
+            <div class="alert-box">
+                {{ error }}
+            </div>
+        {% endif %}
+
+        <!-- Login Form -->
+        <form method="POST" action="/login">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <div class="input-wrapper">
+                    <input type="text" id="username" name="username" placeholder="Enter your username" required>
+                    <div class="input-underline"></div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <div class="input-wrapper">
+                    <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                    <div class="input-underline"></div>
+                </div>
+            </div>
+
+            <button type="submit" class="login-btn">Login</button>
+        </form>
+
+        <!-- Footer -->
+        <div class="form-footer">
+            <p>Don't have an account?</p>
+            <a href="/register">Create one now</a>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script>
+        // Add smooth interactions
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const btn = document.querySelector('.login-btn');
+            btn.classList.add('loading');
+            btn.textContent = '';
+        });
+    </script>
+    {% include 'utilities.html' %}
+    <script src="{{ url_for('static', filename='utility_panel.js') }}"></script>
+</body>
+</html>

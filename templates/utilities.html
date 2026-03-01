@@ -1,0 +1,80 @@
+<!-- Student Utilities launcher and floating windows -->
+<div id="studentUtilsBtn" class="student-utils-btn">🛠️</div>
+
+<!-- launcher showing icons for each tool -->
+<div id="utilitiesLauncher" class="utilities-launcher" hidden>
+    <div class="launcher-header">
+        <span>Utilities</span>
+        <button id="launcherClose" class="icon-btn">✖️</button>
+    </div>
+    <div class="launcher-grid">
+        <button class="tool-btn" data-tool="calcBasic">Calculator</button>
+        <button class="tool-btn" data-tool="calcSci">Scientific</button>
+        <button class="tool-btn" data-tool="unitConv">Unit Converter</button>
+        <button class="tool-btn" data-tool="currencyConv">Currency</button>
+        <button class="tool-btn" data-tool="pomodoro">Pomodoro</button>
+        <button class="tool-btn" data-tool="countdown">Countdown</button>
+        <button class="tool-btn" data-tool="goalTracker">Goal Tracker</button>
+    </div>
+</div>
+
+<!-- container for created windows -->
+<div id="utilitiesWindows" class="utilities-windows"></div>
+
+<!-- hidden templates for each utility, cloned when a window is opened -->
+<div id="templates" style="display:none">
+    <div id="tmpl-calcBasic">
+        <input type="text" class="basic-input calc-display" readonly />
+        <div class="calc-buttons"></div>
+    </div>
+    <div id="tmpl-calcSci">
+        <textarea class="sci-input calc-display"></textarea>
+        <div style="display:flex; gap:6px; align-items:center;">
+            <button class="sci-eval util-btn">Evaluate</button>
+            <button class="sci-clear util-btn" title="Clear">✖</button>
+        </div>
+    </div>
+    <div id="tmpl-unitConv">
+        <p>Value <input class="unit-value" type="number"></p>
+        <p>From <select class="unit-from"><option>m</option><option>km</option></select></p>
+        <p>To <select class="unit-to"><option>km</option><option>m</option></select></p>
+        <div style="display:flex; gap:6px; align-items:center;">
+            <button class="unit-convert util-btn">Convert</button>
+            <button class="unit-clear util-btn" title="Clear">✖</button>
+        </div>
+        <div class="unit-result"></div>
+    </div>
+    <div id="tmpl-currencyConv">
+        <p>Amount <input class="curr-amount" type="number"></p>
+        <p>From <select class="curr-from"><option>USD</option><option>EUR</option></select></p>
+        <p>To <select class="curr-to"><option>EUR</option><option>USD</option></select></p>
+        <div style="display:flex; gap:6px; align-items:center;">
+            <button class="curr-convert util-btn">Convert</button>
+            <button class="curr-clear util-btn" title="Clear">✖</button>
+        </div>
+        <div class="curr-result"></div>
+    </div>
+    <div id="tmpl-pomodoro">
+        <p>Work: <input class="pom-work" type="number" value="25"> mins</p>
+        <p>Break: <input class="pom-break" type="number" value="5"> mins</p>
+        <div style="display:flex; gap:6px; align-items:center;">
+            <button class="pom-start util-btn">Start</button>
+            <button class="pom-clear util-btn" title="Clear">✖</button>
+        </div>
+        <div class="pom-display"></div>
+    </div>
+    <div id="tmpl-countdown">
+        <p>Target Date: <input class="count-date" type="date"></p>
+        <button class="count-start util-btn">Start</button>
+        <div class="count-display"></div>
+    </div>
+    <div id="tmpl-goalTracker">
+        <p>Goal amount: <input class="goal-hours" type="number"></p>
+        <p>Units: <select class="goal-units"><option>minutes</option><option>hours</option></select></p>
+        <div style="display:flex; gap:6px; align-items:center;">
+            <button class="goal-set util-btn">Set</button>
+            <button class="goal-clear util-btn" title="Clear">✖</button>
+        </div>
+        <div class="goal-display"></div>
+    </div>
+</div>
