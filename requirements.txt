@@ -5,3 +5,4 @@ gtts
 python-dotenv
 requests
 gunicorn
+deep-translator
